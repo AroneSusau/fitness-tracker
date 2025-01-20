@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NAB Resolve Step Tracker</title>
+    <style>
+      /* General styling */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #f4f4f4;
+        color: #333;
+      }
+      header {
+        background-color: #e52027; /* NAB red */
+        color: white;
+        padding: 20px;
+        text-align: center;
+        width: 100%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      h1 {
+        margin: 0;
+      }
+      #progress-container {
+        margin: 20px auto;
+        width: 80%;
+        background: #ccc;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      #progress-bar {
+        background: #e52027; /* NAB red */
+        height: 30px;
+        width: 0;
+        text-align: center;
+        color: white;
+        line-height: 30px;
+        font-weight: bold;
+      }
+      #motivational-quote {
+        margin: 20px;
+        font-size: 1.2em;
+        font-style: italic;
+        text-align: center;
+        color: #555;
+      }
+      #log-form {
+        margin-top: 20px;
+        text-align: center;
+      }
+      input[type="number"] {
+        padding: 10px;
+        font-size: 16px;
+        width: 200px;
+        margin-right: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #e52027; /* NAB red */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #c4111f;
+      }
+      #total-steps {
+        margin-top: 20px;
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>NAB Resolve Step Tracker</h1>
+      <p>Let’s walk together towards a healthier workplace!</p>
+    </header>
+
+    <div id="progress-container">
+      <div id="progress-bar">0%</div>
+    </div>
+
+    <div id="motivational-quote">
+      <!-- Placeholder for the daily quote -->
+      "Walking is the best possible exercise. Habituate yourself to walk very
+      far." - Thomas Jefferson
+    </div>
+
+    <form id="log-form">
+      <input
+        type="number"
+        id="step-input"
+        placeholder="Enter your steps"
+        required
+      />
+      <button type="submit">Log Steps</button>
+    </form>
+
+    <p id="total-steps">Total steps logged: 0 / 100,000</p>
+
+    <script>
+      // Shared goal for the week
+      const sharedGoal = 100000;
+      let totalSteps = 0;
+
+      // DOM Elements
+      const progressBar = document.getElementById("progress-bar");
+      const totalStepsText = document.getElementById("total-steps");
+      const stepInput = document.getElementById("step-input");
+      const logForm = document.getElementById("log-form");
+      const motivationalQuote = document.getElementById("motivational-quote");
+
+      // Daily motivational quotes
+      const quotes = [
+        "Walking is the best possible exercise. Habituate yourself to walk very far. - Thomas Jefferson",
+        "A journey of a thousand miles begins with a single step. - Lao Tzu",
+        "You don’t have to be extreme, just consistent.",
+        "Every step you take is a step closer to your goal.",
+        "Take care of your body. It’s the only place you have to live. - Jim Rohn",
+        "Motivation gets you started. Habit keeps you going. - Jim Ryun",
+        "The secret of getting ahead is getting started. - Mark Twain",
+      ];
+
+      // Update motivational quote daily
+      function setDailyQuote() {
+        const today = new Date().getDay(); // Get the current day of the week (0-6)
+        motivationalQuote.textContent = quotes[today % quotes.length];
+      }
+
+      // Update the progress bar and text
+      function updateProgress() {
+        const percentage = Math.min((totalSteps / sharedGoal) * 100, 100);
+        progressBar.style.width = `${percentage}%`;
+        progressBar.textContent = `${Math.floor(percentage)}%`;
+        totalStepsText.textContent = `Total steps logged: ${totalSteps.toLocaleString()} / ${sharedGoal.toLocaleString()}`;
+      }
+
+      // Handle form submission with confirmation
+      logForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const steps = parseInt(stepInput.value);
+        if (!isNaN(steps) && steps > 0) {
+          const confirmation = confirm(
+            `Are you sure you want to log ${steps} steps?`
+          );
+          if (confirmation) {
+            totalSteps += steps;
+            updateProgress();
+            stepInput.value = ""; // Clear input
+          }
+        } else {
+          alert("Please enter a valid number of steps.");
+        }
+      });
+
+      // Initialise the page
+      setDailyQuote();
+      updateProgress();
+    </script>
+  </body>
+</html>
