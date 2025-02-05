@@ -1,170 +1,479 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NAB Resolve Step Tracker</title>
+    <title>Reward Saver Interest Calculator</title>
+    <!-- html2canvas for screenshot functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-      /* General styling */
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background: #f4f4f4;
-        color: #333;
-      }
-      header {
-        background-color: #e52027; /* NAB red */
-        color: white;
-        padding: 20px;
-        text-align: center;
-        width: 100%;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      }
-      h1 {
-        margin: 0;
-      }
-      #progress-container {
+      /* Container centered with a max width for a modern, uncluttered layout */
+      .container {
+        max-width: 800px;
         margin: 20px auto;
-        width: 80%;
-        background: #ccc;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        padding: 20px;
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
-      #progress-bar {
-        background: #e52027; /* NAB red */
-        height: 30px;
-        width: 0;
-        text-align: center;
-        color: white;
-        line-height: 30px;
-        font-weight: bold;
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f5f5f5;
+        color: #000;
       }
-      #motivational-quote {
-        margin: 20px;
-        font-size: 1.2em;
-        font-style: italic;
-        text-align: center;
-        color: #555;
+      h2 {
+        color: #e2231a; /* NAB signature red */
+        margin-bottom: 20px;
+        font-size: 1.8em;
       }
-      #log-form {
-        margin-top: 20px;
-        text-align: center;
+      /* Controls arranged in a flex container so that year & month appear on the same line */
+      .controls {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
       }
-      input[type="number"] {
-        padding: 10px;
-        font-size: 16px;
-        width: 200px;
-        margin-right: 10px;
+      .controls label {
+        font-size: 1em;
+      }
+      .controls input,
+      .controls select {
+        font-size: 1em;
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
       }
       button {
-        padding: 10px 20px;
-        font-size: 16px;
-        background: #e52027; /* NAB red */
-        color: white;
+        background-color: #000; /* black buttons */
         border: none;
-        border-radius: 5px;
+        padding: 6px 12px;
+        font-size: 1em;
+        color: #fff;
+        border-radius: 4px;
         cursor: pointer;
+        transition: background-color 0.2s ease;
       }
       button:hover {
-        background: #c4111f;
+        background-color: #e2231a; /* red on hover */
       }
-      #total-steps {
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 1em;
+      }
+      th,
+      td {
+        padding: 8px;
+        border: 1px solid #ccc;
+        text-align: center;
+      }
+      th {
+        background-color: #000; /* black table headers */
+        color: #fff;
+      }
+      /* Currency input field styling */
+      input.currency {
+        width: 120px;
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        text-align: right;
+        font-size: 1em;
+        transition: background-color 0.2s ease;
+      }
+      .selected {
+        background-color: #ffff99;
+      }
+      /* Modern, stylish summary card for totals */
+      .summary {
         margin-top: 20px;
-        font-size: 18px;
+        padding: 15px;
+        background-color: #fff;
+        border: 2px solid #e2231a;
+        border-radius: 5px;
+        text-align: center;
+      }
+      .summary h3 {
+        margin-top: 0;
+        color: #e2231a;
+        font-size: 1.4em;
+      }
+      .summary p {
+        margin: 5px 0;
+        font-weight: bold;
+        font-size: 1.1em;
+      }
+      /* Credit line styling */
+      .credit {
+        margin-top: 15px;
+        text-align: center;
+        font-size: 0.9em;
+        color: #000;
       }
     </style>
-  </head>
-  <body>
-    <header>
-      <h1>NAB Resolve Step Tracker</h1>
-      <p>Let’s walk together towards a healthier workplace!</p>
-    </header>
-
-    <div id="progress-container">
-      <div id="progress-bar">0%</div>
-    </div>
-
-    <div id="motivational-quote">
-      <!-- Placeholder for the daily quote -->
-      "Walking is the best possible exercise. Habituate yourself to walk very
-      far." - Thomas Jefferson
-    </div>
-
-    <form id="log-form">
-      <input
-        type="number"
-        id="step-input"
-        placeholder="Enter your steps"
-        required
-      />
-      <button type="submit">Log Steps</button>
-    </form>
-
-    <p id="total-steps">Total steps logged: 0 / 100,000</p>
-
     <script>
-      // Shared goal for the week
-      const sharedGoal = 100000;
-      let totalSteps = 0;
+      // Global variable to track the fill source row.
+      let fillSourceIndex = null;
 
-      // DOM Elements
-      const progressBar = document.getElementById("progress-bar");
-      const totalStepsText = document.getElementById("total-steps");
-      const stepInput = document.getElementById("step-input");
-      const logForm = document.getElementById("log-form");
-      const motivationalQuote = document.getElementById("motivational-quote");
-
-      // Daily motivational quotes
-      const quotes = [
-        "Walking is the best possible exercise. Habituate yourself to walk very far. - Thomas Jefferson",
-        "A journey of a thousand miles begins with a single step. - Lao Tzu",
-        "You don’t have to be extreme, just consistent.",
-        "Every step you take is a step closer to your goal.",
-        "Take care of your body. It’s the only place you have to live. - Jim Rohn",
-        "Motivation gets you started. Habit keeps you going. - Jim Ryun",
-        "The secret of getting ahead is getting started. - Mark Twain",
-      ];
-
-      // Update motivational quote daily
-      function setDailyQuote() {
-        const today = new Date().getDay(); // Get the current day of the week (0-6)
-        motivationalQuote.textContent = quotes[today % quotes.length];
+      // --- Currency Input Formatting Functions ---
+      // When the field is focused, remove formatting so the user can edit the raw number.
+      function onFocusCurrency(e) {
+        let el = e.target;
+        el.value = el.value.replace(/[$,]/g, "");
       }
-
-      // Update the progress bar and text
-      function updateProgress() {
-        const percentage = Math.min((totalSteps / sharedGoal) * 100, 100);
-        progressBar.style.width = `${percentage}%`;
-        progressBar.textContent = `${Math.floor(percentage)}%`;
-        totalStepsText.textContent = `Total steps logged: ${totalSteps.toLocaleString()} / ${sharedGoal.toLocaleString()}`;
-      }
-
-      // Handle form submission with confirmation
-      logForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const steps = parseInt(stepInput.value);
-        if (!isNaN(steps) && steps > 0) {
-          const confirmation = confirm(
-            `Are you sure you want to log ${steps} steps?`
-          );
-          if (confirmation) {
-            totalSteps += steps;
-            updateProgress();
-            stepInput.value = ""; // Clear input
+      // On blur, format the number as AUD currency.
+      function onBlurCurrency(e) {
+        let el = e.target;
+        let rawValue = el.value.replace(/[$,]/g, "");
+        if (rawValue.trim() !== "") {
+          let num = parseFloat(rawValue);
+          if (!isNaN(num)) {
+            el.value = num.toLocaleString("en-AU", {
+              style: "currency",
+              currency: "AUD",
+              minimumFractionDigits: 2,
+            });
+          } else {
+            el.value = "";
           }
         } else {
-          alert("Please enter a valid number of steps.");
+          el.value = "";
         }
-      });
+        calculateInterest();
+      }
 
-      // Initialise the page
-      setDailyQuote();
-      updateProgress();
+      // --- Helper Functions for Dates & Holidays ---
+      function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, "0");
+        let month = String(date.getMonth() + 1).padStart(2, "0");
+        let year = date.getFullYear();
+        return day + "/" + month + "/" + year;
+      }
+      function formatDateISO(date) {
+        let day = String(date.getDate()).padStart(2, "0");
+        let month = String(date.getMonth() + 1).padStart(2, "0");
+        let year = date.getFullYear();
+        return year + "-" + month + "-" + day;
+      }
+      function calculateEaster(year) {
+        var f = Math.floor,
+          G = year % 19,
+          C = f(year / 100),
+          H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30,
+          I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)),
+          J = (year + f(year / 4) + I + 2 - C + f(C / 4)) % 7,
+          L = I - J,
+          month = 3 + f((L + 40) / 44),
+          day = L + 28 - 31 * f(month / 4);
+        return new Date(year, month - 1, day);
+      }
+      function getObservedDate(date) {
+        let day = date.getDay();
+        if (day === 6) {
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate() + 2
+          );
+        } else if (day === 0) {
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate() + 1
+          );
+        }
+        return date;
+      }
+      function getNewYearsDay(year) {
+        let d = new Date(year, 0, 1);
+        return getObservedDate(d);
+      }
+      function getAustraliaDay(year) {
+        let d = new Date(year, 0, 26);
+        return getObservedDate(d);
+      }
+      function getGoodFriday(year) {
+        let easter = calculateEaster(year);
+        return new Date(
+          easter.getFullYear(),
+          easter.getMonth(),
+          easter.getDate() - 2
+        );
+      }
+      function getEasterMonday(year) {
+        let easter = calculateEaster(year);
+        return new Date(
+          easter.getFullYear(),
+          easter.getMonth(),
+          easter.getDate() + 1
+        );
+      }
+      function getAnzacDay(year) {
+        return new Date(year, 3, 25);
+      }
+      function getChristmasDay(year) {
+        let d = new Date(year, 11, 25);
+        return getObservedDate(d);
+      }
+      function getBoxingDay(year) {
+        let d = new Date(year, 11, 26);
+        return getObservedDate(d);
+      }
+      function getPublicHolidays(year) {
+        let holidays = [];
+        holidays.push(formatDateISO(getNewYearsDay(year)));
+        holidays.push(formatDateISO(getAustraliaDay(year)));
+        holidays.push(formatDateISO(getGoodFriday(year)));
+        holidays.push(formatDateISO(getEasterMonday(year)));
+        holidays.push(formatDateISO(getAnzacDay(year)));
+        holidays.push(formatDateISO(getChristmasDay(year)));
+        holidays.push(formatDateISO(getBoxingDay(year)));
+        return holidays;
+      }
+      function isBankingDay(date) {
+        let day = date.getDay();
+        if (day === 0 || day === 6) return false;
+        let holidays = getPublicHolidays(date.getFullYear());
+        return !holidays.includes(formatDateISO(date));
+      }
+      // Get the payment date: last day of the month if it's a banking day; otherwise, the last banking day.
+      function getPaymentDate(year, month) {
+        let paymentDate = new Date(year, month, 0);
+        while (!isBankingDay(paymentDate)) {
+          paymentDate = new Date(
+            paymentDate.getFullYear(),
+            paymentDate.getMonth(),
+            paymentDate.getDate() - 1
+          );
+        }
+        return paymentDate;
+      }
+
+      // --- Main Functions ---
+      // When a new month or year is selected, the table and totals are regenerated (clearing any previous data).
+      function generateTable() {
+        fillSourceIndex = null;
+        // Clear the totals
+        document.getElementById("totalBase").textContent = "$0.00";
+        document.getElementById("totalBonus").textContent = "$0.00";
+        document.getElementById("totalInterest").textContent = "$0.00";
+
+        let selectedYear = parseInt(document.getElementById("year").value);
+        let selectedMonth = parseInt(document.getElementById("month").value);
+        let prevMonth, prevYear;
+        if (selectedMonth === 1) {
+          prevMonth = 12;
+          prevYear = selectedYear - 1;
+        } else {
+          prevMonth = selectedMonth - 1;
+          prevYear = selectedYear;
+        }
+        let paymentDatePrev = getPaymentDate(prevYear, prevMonth);
+        let paymentDateCurrent = getPaymentDate(selectedYear, selectedMonth);
+        let cycleStart = paymentDatePrev;
+        let cycleEnd = new Date(
+          paymentDateCurrent.getFullYear(),
+          paymentDateCurrent.getMonth(),
+          paymentDateCurrent.getDate() - 1
+        );
+        document.getElementById(
+          "cyclePeriod"
+        ).textContent = `Cycle Period: ${formatDate(
+          cycleStart
+        )} to ${formatDate(cycleEnd)}`;
+        let table = document.getElementById("interestTable");
+        table.innerHTML = "";
+        // Create table header.
+        let headerRow = table.insertRow();
+        let headers = [
+          "Date",
+          "Balance",
+          "Base Interest",
+          "Bonus Interest",
+          "Total Interest",
+          "Fill",
+        ];
+        headers.forEach((header) => {
+          let th = document.createElement("th");
+          th.textContent = header;
+          headerRow.appendChild(th);
+        });
+        // Create a row for each day in the cycle.
+        for (
+          let d = new Date(cycleStart);
+          d <= cycleEnd;
+          d.setDate(d.getDate() + 1)
+        ) {
+          let row = table.insertRow();
+          let dateCell = row.insertCell(0);
+          dateCell.textContent = formatDate(new Date(d));
+          // Create the balance input field.
+          let balanceInput = document.createElement("input");
+          balanceInput.type = "text";
+          balanceInput.className = "currency";
+          balanceInput.placeholder = "$0.00";
+          balanceInput.value = "";
+          balanceInput.oninput = calculateInterest;
+          balanceInput.onfocus = onFocusCurrency;
+          balanceInput.onblur = onBlurCurrency;
+          row.insertCell(1).appendChild(balanceInput);
+          row.insertCell(2).textContent = "$0.00";
+          row.insertCell(3).textContent = "$0.00";
+          row.insertCell(4).textContent = "$0.00";
+          let fillButton = document.createElement("button");
+          fillButton.textContent = "Fill";
+          fillButton.onclick = function () {
+            fillRow(row.rowIndex);
+          };
+          row.insertCell(5).appendChild(fillButton);
+        }
+      }
+      // Updated fillRow: works in both directions (up and down).
+      function fillRow(targetRowIndex) {
+        let table = document.getElementById("interestTable");
+        if (fillSourceIndex === null) {
+          // No source selected yet—mark the clicked row as the source.
+          fillSourceIndex = targetRowIndex;
+          table.rows[fillSourceIndex].classList.add("selected");
+        } else {
+          // Determine the lower and upper bounds.
+          let lower = Math.min(fillSourceIndex, targetRowIndex);
+          let upper = Math.max(fillSourceIndex, targetRowIndex);
+          let sourceValue =
+            table.rows[fillSourceIndex].cells[1].children[0].value;
+          for (let i = lower; i <= upper; i++) {
+            table.rows[i].cells[1].children[0].value = sourceValue;
+          }
+          table.rows[fillSourceIndex].classList.remove("selected");
+          fillSourceIndex = null;
+          calculateInterest();
+        }
+      }
+      function clearAll() {
+        fillSourceIndex = null;
+        let table = document.getElementById("interestTable");
+        for (let i = 1; i < table.rows.length; i++) {
+          table.rows[i].cells[1].children[0].value = "";
+          table.rows[i].cells[2].textContent = "$0.00";
+          table.rows[i].cells[3].textContent = "$0.00";
+          table.rows[i].cells[4].textContent = "$0.00";
+          table.rows[i].classList.remove("selected");
+        }
+        document.getElementById("totalBase").textContent = "$0.00";
+        document.getElementById("totalBonus").textContent = "$0.00";
+        document.getElementById("totalInterest").textContent = "$0.00";
+      }
+      function calculateInterest() {
+        let table = document.getElementById("interestTable");
+        let baseRate = 0.0035 / 365;
+        let bonusRate = 0.0465 / 365;
+        let totalBase = 0,
+          totalBonus = 0;
+        for (let i = 1; i < table.rows.length; i++) {
+          let rawValue = table.rows[i].cells[1].children[0].value.replace(
+            /[$,]/g,
+            ""
+          );
+          let balance = parseFloat(rawValue) || 0;
+          let baseInterest = balance * baseRate;
+          let bonusInterest = balance * bonusRate;
+          table.rows[i].cells[2].textContent = baseInterest.toLocaleString(
+            "en-AU",
+            { style: "currency", currency: "AUD", minimumFractionDigits: 2 }
+          );
+          table.rows[i].cells[3].textContent = bonusInterest.toLocaleString(
+            "en-AU",
+            { style: "currency", currency: "AUD", minimumFractionDigits: 2 }
+          );
+          table.rows[i].cells[4].textContent = (
+            baseInterest + bonusInterest
+          ).toLocaleString("en-AU", {
+            style: "currency",
+            currency: "AUD",
+            minimumFractionDigits: 2,
+          });
+          totalBase += baseInterest;
+          totalBonus += bonusInterest;
+        }
+        document.getElementById("totalBase").textContent =
+          totalBase.toLocaleString("en-AU", {
+            style: "currency",
+            currency: "AUD",
+            minimumFractionDigits: 2,
+          });
+        document.getElementById("totalBonus").textContent =
+          totalBonus.toLocaleString("en-AU", {
+            style: "currency",
+            currency: "AUD",
+            minimumFractionDigits: 2,
+          });
+        document.getElementById("totalInterest").textContent = (
+          totalBase + totalBonus
+        ).toLocaleString("en-AU", {
+          style: "currency",
+          currency: "AUD",
+          minimumFractionDigits: 2,
+        });
+      }
+      // Copy a screenshot of the page using html2canvas.
+      function copyScreenshot() {
+        html2canvas(document.body).then((canvas) => {
+          canvas.toBlob(function (blob) {
+            const item = new ClipboardItem({ "image/png": blob });
+            navigator.clipboard.write([item]).then(
+              function () {
+                alert("Screenshot copied to clipboard!");
+              },
+              function (error) {
+                alert("Error copying screenshot: " + error);
+              }
+            );
+          });
+        });
+      }
     </script>
+  </head>
+  <body onload="generateTable()">
+    <div class="container">
+      <h2>Reward Saver Interest Calculator</h2>
+      <div class="controls">
+        <label for="year">Year</label>
+        <input
+          type="number"
+          id="year"
+          value="2025"
+          min="2000"
+          max="2030"
+          onchange="generateTable()"
+        />
+        <label for="month">Month</label>
+        <select id="month" onchange="generateTable()">
+          <option value="1">January</option>
+          <option value="2">February</option>
+          <option value="3">March</option>
+          <option value="4">April</option>
+          <option value="5">May</option>
+          <option value="6">June</option>
+          <option value="7">July</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+        <button onclick="clearAll()">Clear All</button>
+        <button onclick="copyScreenshot()">Copy Screenshot</button>
+      </div>
+      <p id="cyclePeriod"></p>
+      <table id="interestTable"></table>
+      <div class="summary">
+        <h3>Total Interest Earned</h3>
+        <p>Base Interest: <span id="totalBase">$0.00</span></p>
+        <p>Bonus Interest: <span id="totalBonus">$0.00</span></p>
+        <p>Total Interest: <span id="totalInterest">$0.00</span></p>
+      </div>
+      <div class="credit">Built by NAB Resolve</div>
+    </div>
   </body>
 </html>
